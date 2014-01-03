@@ -27,7 +27,7 @@ module Bullet
   class << self
     attr_writer :enable, :n_plus_one_query_enable, :unused_eager_loading_enable, :counter_cache_enable
     attr_reader :notification_collector, :whitelist
-    attr_accessor :add_footer
+    attr_accessor :add_footer, :editor
 
     delegate :alert=, :console=, :growl=, :rails_logger=, :xmpp=, :airbrake=, :to => UniformNotifier
 

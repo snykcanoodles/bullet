@@ -7,6 +7,7 @@ module Bullet
     end
 
     def call(env)
+      @env = env
       return @app.call(env) unless Bullet.enable?
       Bullet.start_request
       status, headers, response = @app.call(env)
@@ -40,7 +41,7 @@ module Bullet
     end
 
     def add_footer_note(response_body)
-      response_body << "<div #{footer_div_style}>" + Bullet.footer_info.uniq.join("<br>") + "</div>"
+      response_body << "<div #{footer_div_style}>#{headline}#{bullet_errors}</div>"
     end
 
     # if send file?
@@ -49,7 +50,8 @@ module Bullet
     end
 
     def html_request?(headers, response)
-      headers['Content-Type'] && headers['Content-Type'].include?('text/html') && response_body(response).include?("<html")
+      headers['Content-Type'] && headers['Content-Type'].include?('text/html') &&
+                                 response_body(response).include?("<html")
     end
 
     def response_body(response)
@@ -61,15 +63,51 @@ module Bullet
     end
 
     private
+
+    def headline
+<<EOF
+<h3>
+  Errors:
+  <small style='margin-left:20px;'>
+    <a href='#{file_path}'>Open File</a>
+  </small>
+</h3>
+EOF
+    end
+
+    def bullet_errors
+      Bullet.footer_info.uniq.join("<br>")
+    end
+
     def footer_div_style
 <<EOF
-style="position: fixed; bottom: 0pt; left: 0pt; cursor: pointer; border-style: solid; border-color: rgb(153, 153, 153);
- -moz-border-top-colors: none; -moz-border-right-colors: none; -moz-border-bottom-colors: none;
- -moz-border-left-colors: none; -moz-border-image: none; border-width: 2pt 2pt 0px 0px;
- padding: 5px; border-radius: 0pt 10pt 0pt 0px; background: none repeat scroll 0% 0% rgba(200, 200, 200, 0.8);
- color: rgb(119, 119, 119); font-size: 18px;"
+style="position: fixed;bottom:0;right:0;width:100%;z-index:2000;
+padding:14px;background:rgba(0,0,0,.8);color:#fff;line-height:2;"
 EOF
+    end
+    
+    def editor
+      case Bullet.editor
+      when :sublime then
+        "subl"
+      when :textmate then
+        "txmt"
+      when :emacs then
+        "emacs"
+      when :macvim then
+        "mvim"
+      else
+        "txmt"
+      end
+    end
+
+    def file_path
+      path = Rails.root.join('app/controllers', "#{controller.underscore}.rb")
+      "#{editor}://open?url=file://#{path}"
+    end
+
+    def controller
+      @env['action_controller.instance'].class.name
     end
   end
 end
-
